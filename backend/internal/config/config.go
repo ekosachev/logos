@@ -22,8 +22,7 @@ var (
 
 func loadConfig() *Config {
 	once.Do(func() {
-		if err := godotenv.Load(); err != nil {
-		}
+		_ = godotenv.Load()
 		instance = &Config{
 			DBHost:     getEnv("DB_HOST", ""),
 			DBPort:     getEnv("DB_PORT", ""),
