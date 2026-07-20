@@ -9,6 +9,7 @@ import (
 
 type UserStorer interface {
 	StoreUser(ctx context.Context, user *internal.User) error
+	GetUserByUsername(ctx context.Context, username string) (*internal.User, error)
 }
 
 type UserService struct {

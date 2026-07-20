@@ -39,3 +39,20 @@ func (r *UserRepository) StoreUser(ctx context.Context, user *internal.User) err
 	user.ID = model.ID
 	return nil
 }
+
+func (r *UserRepository) GetUserByUsername(ctx context.Context, username string) (*internal.User, error) {
+	user, err := gorm.G[User](r.db).Where("username = ?", username).First(ctx)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, internal.ErrUserNotFound
+		}
+
+		return nil, err
+	}
+
+	return &internal.User{
+		ID:           user.ID,
+		Username:     user.Username,
+		PasswordHash: user.PasswordHash,
+	}, nil
+}

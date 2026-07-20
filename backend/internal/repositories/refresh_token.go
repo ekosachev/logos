@@ -11,10 +11,11 @@ import (
 )
 
 type RefreshToken struct {
-	ID      uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
-	UserID  uuid.UUID
-	Token   string
-	Revoked bool
+	ID        uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	UserID    uuid.UUID
+	Token     string
+	Revoked   bool
+	ExpiresAt time.Time
 
 	CreatedAt time.Time
 }

@@ -9,6 +9,7 @@ import (
 var (
 	ErrUsernameExists = errors.New("User with this username already exists")
 	ErrUserNotFound   = errors.New("User was not found")
+	ErrAuthFailed     = errors.New("authentication failed")
 )
 
 type User struct {
