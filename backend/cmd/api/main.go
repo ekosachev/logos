@@ -20,15 +20,17 @@ func main() {
 	refreshTokenRepository := repositories.NewRefreshTokenRepository(db)
 
 	userService := services.NewUserService(userRepository)
-	_ = services.NewAuthService(refreshTokenRepository, userRepository)
+	authService := services.NewAuthService(refreshTokenRepository, userRepository)
 
 	userHandler := handlers.NewUserHandler(userService)
+	authHandler := handlers.NewAuthHandler(authService)
 
 	router := gin.Default()
 	router.GET("/ping", func(ctx *gin.Context) { ctx.JSON(200, gin.H{"message": "pong"}) })
 	apiGroup := router.Group("/api/v1")
 	{
 		userHandler.RegisterRoutes(apiGroup)
+		authHandler.RegisterRoutes(apiGroup)
 	}
 
 	if err = router.Run(); err != nil {
