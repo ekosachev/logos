@@ -1,6 +1,12 @@
 package internal
 
-import "github.com/google/uuid"
+import (
+	"errors"
+
+	"github.com/google/uuid"
+)
+
+var ErrUsernameExists = errors.New("User with this username already exists")
 
 type User struct {
 	ID           uuid.UUID

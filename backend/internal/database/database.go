@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ekosachev/logos/internal/config"
+	"github.com/ekosachev/logos/internal/repositories"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -24,7 +25,7 @@ func ConnectToDb() (*gorm.DB, error) {
 		return nil, err
 	}
 
-	if err = db.AutoMigrate(); err != nil {
+	if err = db.AutoMigrate(&repositories.User{}); err != nil {
 		return nil, err
 	}
 
