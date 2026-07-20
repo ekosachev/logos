@@ -13,6 +13,8 @@ type User struct {
 	ID           uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	Username     string    `gorm:"uniqueIndex"`
 	PasswordHash string
+
+	RefreshTokens []RefreshToken
 }
 
 type UserRepository struct {
