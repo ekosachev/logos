@@ -17,6 +17,7 @@ func main() {
 	}
 
 	userRepository := repositories.NewUserRepository(db)
+	_ = repositories.NewRefreshTokenRepository(db)
 
 	userService := services.NewUserService(userRepository)
 
