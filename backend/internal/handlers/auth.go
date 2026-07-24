@@ -72,13 +72,13 @@ func (h *AuthHandler) login(c *gin.Context) {
 	})
 }
 
-func getUUIDFromCxt(c *gin.Context, name string) (uuid.UUID, error) {
+func getUUIDFromCtx(c *gin.Context, name string) (uuid.UUID, error) {
 	uuidString := c.GetString(name)
 	return uuid.Parse(uuidString)
 }
 
 func (h *AuthHandler) refresh(c *gin.Context) {
-	userID, err := getUUIDFromCxt(c, "userID")
+	userID, err := getUUIDFromCtx(c, "userID")
 	if err != nil {
 		sendError(c, http.StatusInternalServerError, err)
 		return
