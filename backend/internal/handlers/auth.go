@@ -5,10 +5,12 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type AuthServicer interface {
 	Login(ctx context.Context, username string, password string) (accessToken, refreshToken string, err error)
+	Refresh(ctx context.Context, userID uuid.UUID) (accessToken, newRefreshToken string, err error)
 }
 
 type AuthHandler struct {
@@ -48,6 +50,34 @@ func (h *AuthHandler) login(c *gin.Context) {
 	if err != nil {
 		statusCode := MapErrorToStatus(err)
 		sendError(c, statusCode, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, APIResponse{
+		Success: true,
+		Data: LoginResponse{
+			AccessToken:  accessToken,
+			RefreshToken: refreshToken,
+		},
+	})
+}
+
+func getUUIDFromCxt(c *gin.Context, name string) (uuid.UUID, error) {
+	uuidString := c.GetString(name)
+	return uuid.Parse(uuidString)
+}
+
+func (h *AuthHandler) refresh(c *gin.Context) {
+	userID, err := getUUIDFromCxt(c, "userID")
+	if err != nil {
+		sendError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	accessToken, refreshToken, err := h.service.Refresh(c, userID)
+	if err != nil {
+		errorCode := MapErrorToStatus(err)
+		sendError(c, errorCode, err)
 		return
 	}
 

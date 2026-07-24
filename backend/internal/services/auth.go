@@ -14,6 +14,8 @@ import (
 
 type RefreshTokenStorer interface {
 	StoreRefreshToken(ctx context.Context, token *internal.RefreshToken) error
+	GetActiveRefreshToken(ctx context.Context, userID uuid.UUID) (*internal.RefreshToken, error)
+	RevokeToken(ctx context.Context, tokenID uuid.UUID) error
 }
 
 type AuthService struct {
@@ -97,4 +99,35 @@ func generateRefreshToken(userID uuid.UUID) (time.Time, string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString([]byte(cfg.JWTRefreshSecret))
 	return exp, tokenString, err
+}
+
+func (s *AuthService) Refresh(ctx context.Context, userID uuid.UUID) (accessToken, newRefreshToken string, err error) {
+	activeToken, err := s.refreshTokenRepository.GetActiveRefreshToken(ctx, userID)
+	if err != nil {
+		return "", "", internal.ErrAuthFailed
+	}
+
+	if err = s.refreshTokenRepository.RevokeToken(ctx, activeToken.ID); err != nil {
+		return "", "", internal.ErrAuthFailed
+	}
+
+	accessToken, err = generateAccessToken(userID)
+	if err != nil {
+		return "", "", internal.ErrAuthFailed
+	}
+	exp, refreshToken, err := generateRefreshToken(userID)
+	if err != nil {
+		return "", "", internal.ErrAuthFailed
+	}
+
+	token := internal.RefreshToken{
+		UserID:    userID,
+		Token:     refreshToken,
+		ExpiresAt: exp,
+	}
+	if err = s.refreshTokenRepository.StoreRefreshToken(ctx, &token); err != nil {
+		return "", "", internal.ErrAuthFailed
+	}
+
+	return accessToken, refreshToken, nil
 }
