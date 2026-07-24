@@ -13,13 +13,19 @@ type AuthServicer interface {
 	Refresh(ctx context.Context, userID uuid.UUID) (accessToken, newRefreshToken string, err error)
 }
 
-type AuthHandler struct {
-	service AuthServicer
+type MiddlewareServicer interface {
+	RequiresRefreshToken() gin.HandlerFunc
 }
 
-func NewAuthHandler(service AuthServicer) *AuthHandler {
+type AuthHandler struct {
+	authService       AuthServicer
+	middlewareService MiddlewareServicer
+}
+
+func NewAuthHandler(authService AuthServicer, middlewareService MiddlewareServicer) *AuthHandler {
 	return &AuthHandler{
-		service: service,
+		authService:       authService,
+		middlewareService: middlewareService,
 	}
 }
 
@@ -27,6 +33,10 @@ func (h *AuthHandler) RegisterRoutes(group *gin.RouterGroup) {
 	authGroup := group.Group("/auth")
 	{
 		authGroup.POST("/login", h.login)
+		refreshTokenGroup := authGroup.Group("/").Use(h.middlewareService.RequiresRefreshToken())
+		{
+			refreshTokenGroup.GET("/refresh", h.refresh)
+		}
 	}
 }
 
@@ -46,7 +56,7 @@ func (h *AuthHandler) login(c *gin.Context) {
 		return
 	}
 
-	accessToken, refreshToken, err := h.service.Login(c, req.Username, req.Password)
+	accessToken, refreshToken, err := h.authService.Login(c, req.Username, req.Password)
 	if err != nil {
 		statusCode := MapErrorToStatus(err)
 		sendError(c, statusCode, err)
@@ -74,7 +84,7 @@ func (h *AuthHandler) refresh(c *gin.Context) {
 		return
 	}
 
-	accessToken, refreshToken, err := h.service.Refresh(c, userID)
+	accessToken, refreshToken, err := h.authService.Refresh(c, userID)
 	if err != nil {
 		errorCode := MapErrorToStatus(err)
 		sendError(c, errorCode, err)

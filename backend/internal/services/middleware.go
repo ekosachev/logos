@@ -1,14 +1,21 @@
-package middleware
+package services
 
 import (
 	"net/http"
 
 	"github.com/ekosachev/logos/internal/config"
-	"github.com/ekosachev/logos/internal/repositories"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
+
+type MiddlewareService struct {
+	refreshTokenRepository RefreshTokenStorer
+}
+
+func NewMiddlewareService(refreshTokenRepository RefreshTokenStorer) *MiddlewareService {
+	return &MiddlewareService{refreshTokenRepository: refreshTokenRepository}
+}
 
 func verifyRefreshToken(tokenString string) (bool, *uuid.UUID) {
 	cfg := config.GetConfig()
@@ -25,7 +32,7 @@ func verifyRefreshToken(tokenString string) (bool, *uuid.UUID) {
 	return false, nil
 }
 
-func RequiresRefreshToken(refreshTokenRepo *repositories.RefreshTokenRepository) gin.HandlerFunc {
+func (s *MiddlewareService) RequiresRefreshToken() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		tokenString, err := ctx.Cookie("refreshToken")
 		if err != nil {
@@ -34,14 +41,14 @@ func RequiresRefreshToken(refreshTokenRepo *repositories.RefreshTokenRepository)
 		}
 
 		if ok, userID := verifyRefreshToken(tokenString); ok && userID != nil {
-			validToken, err := refreshTokenRepo.GetActiveRefreshToken(ctx, *userID)
+			validToken, err := s.refreshTokenRepository.GetActiveRefreshToken(ctx, *userID)
 			if err != nil || validToken == nil {
-				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"Success": false, "Error": "Unauthorized"})
+				ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"Success": false, "Error": "Unauthorized"})
 				return
 			}
 
 			if validToken.Token != tokenString {
-				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"Success": false, "Error": "Unauthorized"})
+				ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"Success": false, "Error": "Unauthorized"})
 				return
 			}
 
