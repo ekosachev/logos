@@ -11,10 +11,12 @@ import (
 type AuthServicer interface {
 	Login(ctx context.Context, username string, password string) (accessToken, refreshToken string, err error)
 	Refresh(ctx context.Context, userID uuid.UUID) (accessToken, newRefreshToken string, err error)
+	Logout(ctx context.Context, userID uuid.UUID) error
 }
 
 type MiddlewareServicer interface {
 	RequiresRefreshToken() gin.HandlerFunc
+	RequiresAccessToken() gin.HandlerFunc
 }
 
 type AuthHandler struct {
@@ -36,6 +38,10 @@ func (h *AuthHandler) RegisterRoutes(group *gin.RouterGroup) {
 		refreshTokenGroup := authGroup.Group("/").Use(h.middlewareService.RequiresRefreshToken())
 		{
 			refreshTokenGroup.GET("/refresh", h.refresh)
+		}
+		accessTokenGroup := authGroup.Group("/").Use(h.middlewareService.RequiresAccessToken())
+		{
+			accessTokenGroup.GET("/logout", h.logout)
 		}
 	}
 }
@@ -98,4 +104,20 @@ func (h *AuthHandler) refresh(c *gin.Context) {
 			RefreshToken: refreshToken,
 		},
 	})
+}
+
+func (h *AuthHandler) logout(c *gin.Context) {
+	userID, err := getUUIDFromCtx(c, "userID")
+	if err != nil {
+		sendError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	if err = h.authService.Logout(c, userID); err != nil {
+		errorCode := MapErrorToStatus(err)
+		sendError(c, errorCode, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, APIResponse{Success: true})
 }
