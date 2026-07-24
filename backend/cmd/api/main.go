@@ -21,9 +21,10 @@ func main() {
 
 	userService := services.NewUserService(userRepository)
 	authService := services.NewAuthService(refreshTokenRepository, userRepository)
+	middlewareService := services.NewMiddlewareService(refreshTokenRepository)
 
 	userHandler := handlers.NewUserHandler(userService)
-	authHandler := handlers.NewAuthHandler(authService)
+	authHandler := handlers.NewAuthHandler(authService, middlewareService)
 
 	router := gin.Default()
 	router.GET("/ping", func(ctx *gin.Context) { ctx.JSON(200, gin.H{"message": "pong"}) })
