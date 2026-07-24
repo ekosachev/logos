@@ -131,3 +131,16 @@ func (s *AuthService) Refresh(ctx context.Context, userID uuid.UUID) (accessToke
 
 	return accessToken, refreshToken, nil
 }
+
+func (s *AuthService) Logout(ctx context.Context, userID uuid.UUID) error {
+	activeToken, err := s.refreshTokenRepository.GetActiveRefreshToken(ctx, userID)
+	if err != nil {
+		return internal.ErrAuthFailed
+	}
+
+	if err = s.refreshTokenRepository.RevokeToken(ctx, activeToken.ID); err != nil {
+		return internal.ErrAuthFailed
+	}
+
+	return nil
+}
